@@ -14,13 +14,17 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            AdminUserSeeder::class,
+            AdminUserSeeder::class, // Seeder bawaan untuk user admin
+            FranchiseSeeder::class, // Buat cabang dulu
+            IngredientAndProductSeeder::class, // Lalu buat bahan dan produk
+            UserRoleSeeder::class, // Buat user (manajer & kasir) yang bergantung pada cabang
+            StockSeeder::class, // Terakhir, buat stok yang bergantung pada cabang dan bahan baku
         ]);
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // User::factory()->create([
+        //     'name' => 'Test User',
+        //     'email' => 'test@example.com',
+        // ]);
     }
 }

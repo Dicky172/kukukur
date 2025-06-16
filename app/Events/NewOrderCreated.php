@@ -2,31 +2,56 @@
 
 namespace App\Events;
 
-use App\Models\Order; // Jangan lupa import model Order
+use App\Models\Order;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast; // <-- PENTING!
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewOrderCreated implements ShouldBroadcast // <-- Implementasikan interface ini
+class NewOrderCreated implements ShouldBroadcast // Pastikan implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $order; // Buat property public agar bisa diakses di frontend
+    public Order $order;
 
-    public function __construct(Order $order) {
+    /**
+     * Create a new event instance.
+     */
+    public function __construct(Order $order)
+    {
         $this->order = $order;
     }
 
-    // Tentukan channel broadcast-nya
-    public function broadcastOn(): array {
-        // Kita broadcast ke channel private untuk semua admin
-        // Nama channel bisa apa saja, contoh: 'admin-dashboard'
+    /**
+     * Nama event yang akan disiarkan.
+     */
+    public function broadcastAs(): string
+    {
+        return 'new-order';
+    }
+
+    /**
+     * Data yang akan dikirim bersama event.
+     */
+    public function broadcastWith(): array
+    {
+        // Kita ambil nama cabang dari relasi Order -> Franchise
         return [
-            new PrivateChannel('admin-dashboard'),
+            'franchise_name' => $this->order->franchise->name,
+        ];
+    }
+
+    /**
+     * Channel private untuk admin.
+     */
+    public function broadcastOn(): array
+    {
+        return [
+            // Hanya admin yang bisa mendengarkan channel ini
+            new PrivateChannel('notifications.admin'),
         ];
     }
 }

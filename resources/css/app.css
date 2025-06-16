@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* resources/css/app.css */
+
+@keyframes pulse {
+    0% { background-color: #fff; }
+    50% { background-color: #fee2e2; }
+    100% { background-color: #fff; }
+}
+
+.bg-pulse {
+    animation: pulse 2s ease-in-out 3;
+}

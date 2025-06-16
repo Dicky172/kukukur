@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\Stock;
 use App\Events\NewOrderCreated; // Event untuk notifikasi real-time
+use App\Events\StockLevelIsLow;
 use Illuminate\Validation\ValidationException;
 
 class CashierController extends Controller {
@@ -115,6 +116,19 @@ class CashierController extends Controller {
 
                         // Kurangi stok
                         $stock->decrement('quantity', $quantityToReduce);
+
+                        $criticalThreshold = 20; // Anda bisa membuat nilai ini dinamis, misal dari config
+
+                        $stock->refresh();
+
+                        // Periksa jumlah stok SETELAH dikurangi
+                        if ($stock->quantity < $criticalThreshold) {
+                            // Muat relasi 'ingredient' agar namanya bisa ditampilkan di notifikasi frontend
+                            $stock->load('ingredient'); 
+                            
+                            // Picu event bahwa stok menipis!
+                            StockLevelIsLow::dispatch($stock);
+                        }
                     }
                 }
 

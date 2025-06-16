@@ -51,6 +51,5 @@ Route::get('/', function () {
     return redirect('http://kasir.kukurukuy.test/login');
 });
 
-
 // Memuat rute autentikasi (login, logout, register, dll) yang dibuat oleh Breeze.
 require __DIR__ . '/auth.php';

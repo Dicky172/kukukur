@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dasbor Stok - {{ $franchiseName }}</title>
+    @vite(['resources/js/app.js'])
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style> body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; } </style>
@@ -38,9 +39,11 @@
                         </thead>
                         <tbody>
                             @forelse ($stocks as $stock)
-                                <tr class="@if($stock->quantity < 100) bg-red-50 @endif"> <!-- Contoh: beri tanda jika stok kritis -->
+                                <tr id="stock-row-{{ $stock->id }}" class="@if($stock->quantity < 100) bg-red-50 @endif transition-colors duration-500">
                                     <td class="px-5 py-4 border-b border-gray-200 text-sm">{{ $stock->ingredient->name }}</td>
-                                    <td class="px-5 py-4 border-b border-gray-200 text-sm font-semibold">{{ $stock->quantity }} {{ $stock->ingredient->unit }}</td>
+                                    <td id="stock-quantity-{{ $stock->id }}" class="px-5 py-4 border-b border-gray-200 text-sm font-semibold">
+                                        {{ $stock->quantity }} {{ $stock->ingredient->unit }}
+                                    </td>
                                 </tr>
                             @empty
                                 <tr><td colspan="2" class="text-center py-4">Belum ada data stok.</td></tr>
@@ -111,6 +114,13 @@
     </div>
 
     <script>
+    // Minta izin notifikasi
+    if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+    </script>
+
+    <script>
         const addItemBtn = document.getElementById('add-item-btn');
         const requestItemsContainer = document.getElementById('request-items');
         const ingredients = @json($ingredients);
@@ -157,6 +167,52 @@
                 // Hapus elemen induk dari tombol tersebut (yaitu seluruh baris div.flex)
                 e.target.parentElement.remove();
             }
+        });
+    </script>
+    <script src="{{ asset('js/app.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const franchiseId = {{ Auth::user()->franchise_id }};
+            
+            // Inisialisasi Echo
+            window.Echo = new Echo({
+                broadcaster: 'pusher',
+                key: '{{ config('broadcasting.connections.pusher.key') }}',
+                cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
+                authEndpoint: '/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                }
+            });
+
+            // Subscribe ke channel privat
+            window.Echo.private('franchise.' + franchiseId)
+                .listen('StockLevelIsLow', (e) => {
+                    const stock = e.stock;
+                    const rowId = `stock-row-${stock.id}`;
+                    const qtyCell = document.getElementById(`stock-quantity-${stock.id}`);
+                    
+                    if (qtyCell) {
+                        // Update nilai stok
+                        qtyCell.textContent = `${stock.quantity} ${stock.ingredient.unit}`;
+                        
+                        // Animasi peringatan
+                        const row = document.getElementById(rowId);
+                        row.classList.add('bg-red-100');
+                        
+                        // Notifikasi browser
+                        if (Notification.permission === 'granted') {
+                            new Notification('Stok Menipis!', {
+                                body: `${stock.ingredient.name} tersisa ${stock.quantity} ${stock.ingredient.unit}`
+                            });
+                        }
+                        
+                        // Alert visual
+                        alert(`PERINGATAN! Stok ${stock.ingredient.name} tersisa ${stock.quantity} ${stock.ingredient.unit}`);
+                    }
+                });
         });
     </script>
 </body>
